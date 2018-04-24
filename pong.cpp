@@ -222,15 +222,30 @@ void collision_callback(phys_obj *obj, phys_obj *obj2, int area_x, int area_y)
             scoreplayer2++;
             obj->pos_x = 300;
             obj->pos_y = 100;
-        }
-
-        if (obj->pos_x+obj->size_x >= area_x) {
+            if (obj->step_y > 0) { obj->step_y = 1; } else { obj->step_y = -1; }
+        } else if (obj->pos_x+obj->size_x >= area_x) {
             scoreplayer1++;
             obj->pos_x = 300;
             obj->pos_y = 100;
+            if (obj->step_y > 0) { obj->step_y = 1; } else { obj->step_y = -1; }
         }
     } else {
-        
+        int size = obj2->size_y+obj->size_y;
+        int point = obj2->pos_y-obj->size_y;
+        int seg = size/4;
+        int y1 = point+seg;
+        int y2 = y1+seg+seg;
+        int y3 = y2+seg;
+
+        if (obj->pos_y >= point) {
+            if (obj->pos_y <= y1) {
+                obj->step_y = -2;
+            } else if (obj->pos_y <= y2) {
+                if (obj->step_y > 0) { obj->step_y = 1; } else { obj->step_y = -1; }
+            } else if (obj->pos_y <= y3) {
+                obj->step_y = 2;
+            }
+        }
     }
 }
 
