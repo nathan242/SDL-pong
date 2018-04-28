@@ -9,7 +9,7 @@ SDL_Surface *p1win = NULL;
 SDL_Surface *p2win = NULL;
 
 // SDL Rect for positions of numbers in numbers.png
-SDL_Rect num[10];
+SDL_Rect num[11];
 
 // SDL event for handling input
 SDL_Event input;
@@ -334,6 +334,13 @@ void pong()
     num[9].y = 0;
     num[9].w = 50;
     num[9].h = 50;
+
+    // 10
+    num[10].x = 450;
+    num[10].y = 0;
+    num[10].w = 50;
+    num[10].h = 50;
+
 
     // bool vars for control directions and quit event
     bool quit = false;
