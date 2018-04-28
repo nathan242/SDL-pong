@@ -38,8 +38,9 @@ struct phys_obj
     int delay_counter;
 
     int bounce;
+    phys_obj *collided;
 
-    void (*callback)(phys_obj *obj, phys_obj *obj2, int area_x, int area_y);
+    void (*callback)(phys_obj *obj, phys_obj *obj2, int collide_axis, int area_x, int area_y);
 };
 
 class phys
@@ -138,6 +139,9 @@ void phys::check_collide(phys_obj *obj, int id)
     int y1;
     int y2;
 
+    int diff_x;
+    int diff_y;
+
     list = list_head;
 
     // Check collision with other objects
@@ -150,24 +154,32 @@ void phys::check_collide(phys_obj *obj, int id)
             y2 = obj2->pos_y+obj2->size_y;
 
             if (obj->pos_x >= x1 && obj->pos_x <= x2 && obj->pos_y >= y1 && obj->pos_y <= y2) {
-                if (obj->pos_x == x1 || obj->pos_x == x2) {
-                    if (obj->callback != NULL) { obj->callback(obj, obj2, area_x, area_y); }
-                    if (obj->bounce > 0) {
-                        obj->step_x = obj->step_x*-1;
+                if (obj->collided != obj2) {
+
+                    if (obj->pos_x-x1 > x2-obj->pos_x) { diff_x = x2-obj->pos_x; } else { diff_x = obj->pos_x-x1; }
+                    if (obj->pos_y-y1 > y2-obj->pos_y) { diff_y = y2-obj->pos_y; } else { diff_y = obj->pos_y-y1; }
+
+                    if (diff_y > diff_x) {
+                        if (obj->callback != NULL) { obj->callback(obj, obj2, 1, area_x, area_y); }
+                        if (obj->bounce > 0) {
+                            obj->step_x = obj->step_x*-1;
+                        } else {
+                            obj->step_x = 0;
+                            obj->step_y = 0;
+                        }
                     } else {
-                        obj->step_x = 0;
-                        obj->step_y = 0;
+                        if (obj->callback != NULL) { obj->callback(obj, obj2, 2, area_x, area_y); }
+                        if (obj->bounce > 0) {
+                            obj->step_y = obj->step_y*-1;
+                        } else {
+                            obj->step_x = 0;
+                            obj->step_y = 0;
+                        }
                     }
+                    obj->collided = obj2;
                 }
-                if (obj->pos_y == y1 || obj->pos_y == y2) {
-                    if (obj->callback != NULL) { obj->callback(obj, obj2, area_x, area_y); }
-                    if (obj->bounce > 0) {
-                        obj->step_y = obj->step_y*-1;
-                    } else {
-                        obj->step_x = 0;
-                        obj->step_y = 0;
-                    }
-                }
+            } else if (obj->collided == obj2) {
+                obj->collided = NULL;
             }
         }
 
@@ -176,7 +188,7 @@ void phys::check_collide(phys_obj *obj, int id)
 
     // Check collision with edges
     if (obj->pos_x >= area_x-obj->size_x || obj->pos_x <= 0) { 
-        if (obj->callback != NULL) { obj->callback(obj, NULL, area_x, area_y); }
+        if (obj->callback != NULL) { obj->callback(obj, NULL, 0, area_x, area_y); }
         if (obj->bounce > 0) {
             obj->step_x = obj->step_x*-1;
         } else if (obj->pos_x >= area_x-obj->size_x && obj->step_x > 0 || obj->pos_x <= 0 && obj->step_x < 0) {
@@ -185,7 +197,7 @@ void phys::check_collide(phys_obj *obj, int id)
         }
     }
     if (obj->pos_y >= area_y-obj->size_y || obj->pos_y <= 0) {
-        if (obj->callback != NULL) { obj->callback(obj, NULL, area_x, area_y); }
+        if (obj->callback != NULL) { obj->callback(obj, NULL, 0, area_x, area_y); }
         if (obj->bounce > 0) {
             obj->step_y = obj->step_y*-1;
         } else if (obj->pos_y >= area_y-obj->size_y && obj->step_y > 0 || obj->pos_y <= 0 && obj->step_y < 0) {
@@ -214,7 +226,7 @@ phys::~phys()
     }
 }
 
-void collision_callback(phys_obj *obj, phys_obj *obj2, int area_x, int area_y)
+void collision_callback(phys_obj *obj, phys_obj *obj2, int collide_axis, int area_x, int area_y)
 {
     // Check if collision is with edge
     if (obj2 == NULL) {
@@ -229,7 +241,7 @@ void collision_callback(phys_obj *obj, phys_obj *obj2, int area_x, int area_y)
             obj->pos_y = 100;
             if (obj->step_y > 0) { obj->step_y = 1; } else { obj->step_y = -1; }
         }
-    } else {
+    } else if (collide_axis == 1) {
         int size = obj2->size_y+obj->size_y;
         int point = obj2->pos_y-obj->size_y;
         int seg = size/4;
@@ -354,6 +366,7 @@ void pong()
     paddle_left->delay = 0;
     paddle_left->delay_counter = 0;
     paddle_left->bounce = 0;
+    paddle_left->collided = NULL;
     paddle_left->callback = NULL;
 
     // Right paddle
@@ -367,6 +380,7 @@ void pong()
     paddle_right->delay = 0;
     paddle_right->delay_counter = 0;
     paddle_right->bounce = 0;
+    paddle_right->collided = NULL;
     paddle_right->callback = NULL;
 
     int paddle_mid = paddle_right->size_y/2;
@@ -382,6 +396,7 @@ void pong()
     ball->delay = 0;
     ball->delay_counter = 0;
     ball->bounce = 1;
+    ball->collided = NULL;
     ball->callback = collision_callback;
 
     // Load images
